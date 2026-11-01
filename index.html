@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Dex-T2 — Open Egocentric Visuo-Tactile Manipulation Dataset</title>
+  <meta name="description" content="Large-scale egocentric human manipulation dataset with synchronized multi-view RGB, 3D hand poses, bilateral high-density tactile arrays, and fine-grained semantic annotations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #ffffff;
+      --text-body: rgba(255, 255, 255, 0.8);
+      --text-muted: rgba(255, 255, 255, 0.55);
+      --border-subtle: rgba(255, 255, 255, 0.14);
+      --accent-from: #ffffff;
+      --accent-to: #9fa8ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    /* Top Navigation Bar (Lightwheel-style transparent fixed header) */
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0) 100%);
+      transition: background-color 0.25s ease, backdrop-filter 0.25s ease, border-color 0.25s ease;
+      border-bottom: 1px solid transparent;
+    }
+
+    .site-header.scrolled {
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    @media (min-width: 1280px) {
+      .site-header {
+        padding: 0 56px;
+      }
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffffff 0%, #9fa8ff 100%);
+      box-shadow: 0 0 12px rgba(159, 168, 255, 0.8);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-pill {
+      appearance: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-pill:hover,
+    .nav-pill.active {
+      background: rgba(255, 255, 255, 0.92);
+      color: #111111;
+      border-color: #ffffff;
+    }
+
+    /* Sticky Hero Wrapper (matches lightwheel.ai/media/egosuite-open100k: calc(100vh + 600px)) */
+    .hero-scroll-section {
+      position: relative;
+      height: calc(100vh + 600px);
+      width: 100%;
+    }
+
+    .hero-sticky-viewport {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      background: #050505;
+    }
+
+    /* 4x7 Egocentric GIF Wall filling the viewport */
+    .gif-wall {
+      display: grid;
+      width: 100%;
+      height: 100%;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: 2px;
+      background-color: #000000;
+    }
+
+    @media (max-width: 1024px) {
+      .gif-wall {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: repeat(7, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .gif-wall {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(14, minmax(0, 1fr));
+      }
+    }
+
+    .gif-cell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+
+    .gif-cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+       object-position: center;
+      display: block;
+      transition: transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .gif-cell:hover img {
+      transform: scale(1.04);
+    }
+
+    .gif-badge {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      right: 6px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+      color: #ffffff;
+      font-size: 0.68rem;
+      line-height: 1.25;
+      font-weight: 500;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .gif-cell:hover .gif-badge,
+    body.show-all-labels .gif-badge {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Scroll-activated Hero Title Overlay (matches Lightwheel's absolute inset-0 bg-black/50) */
+    .hero-title-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.56);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .hero-title-card {
+      width: 100%;
+      max-width: 1325px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .partner-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+
+    .hero-h1 {
+      color: #ffffff;
+      font-size: clamp(1.9rem, 4vw, 3.25rem);
+      line-height: 1.2;
+      font-weight: 600;
+      text-wrap: balance;
+      white-space: pre-line;
+    }
+
+    .hero-h2 {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 300;
+      font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+      line-height: 1.3;
+      max-width: 760px;
+      margin: 24px auto 0;
+    }
+
+    /* Subtle Scroll Cue at scrollY = 0 */
+    .scroll-cue {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 0.76rem;
+      letter-spacing: 0.03em;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    /* Main Article Container (matches Lightwheel's xl:max-w-[1100px] xl:px-28 space-y-28) */
+    .article-body {
+      display: flex;
+      flex-direction: column;
+      padding: 80px 20px 112px;
+      gap: 72px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 1280px) {
+      .article-body {
+        padding: 112px 0 140px;
+        gap: 112px;
+      }
+    }
+
+    .content-section {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .content-inner {
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--text-body);
+      line-height: 1.85;
+    }
+
+    @media (min-width: 1280px) {
+      .content-inner {
+        padding: 0 112px;
+        font-size: 1.25rem;
+      }
+    }
+
+    .content-inner p + p,
+    .content-inner p + ul,
+    .content-inner ul + p {
+      margin-top: 24px;
+    }
+
+    .section-heading {
+      font-size: 1.65rem;
+      line-height: 1.2;
+      color: #ffffff;
+      font-weight: 600;
+      margin-bottom: 40px;
+    }
+
+    @media (min-width: 1280px) {
+      .section-heading {
+        font-size: 3rem;
+        text-align: center;
+        margin-bottom: 64px;
+      }
+    }
+
+    /* Gradient Highlight Links (from-[#FFFFFF] to-[#9FA8FF]) */
+    .gradient-link {
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      background: linear-gradient(90deg, var(--accent-from) 0%, var(--accent-to) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      transition: opacity 0.2s ease;
+    }
+
+    .gradient-link:hover {
+      opacity: 0.85;
+    }
+
+    .placeholder-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(159, 168, 255, 0.14);
+      border: 1px solid rgba(159, 168, 255, 0.35);
+      color: #b9c0ff;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .bullet-list {
+      list-style-type: disc;
+      padding-left: 28px;
+    }
+
+    .bullet-list li + li {
+      margin-top: 10px;
+    }
+
+    /* CTA Button (matches Lightwheel's bordered rounded-xl button) */
+    .cta-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: transparent;
+      color: #ffffff;
+      font-size: 0.98rem;
+      font-weight: 600;
+      text-decoration: none;
+      backdrop-filter: blur(4px);
+      transition: all 0.4s ease;
+      cursor: pointer;
+    }
+
+    .cta-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      transition: transform 0.35s ease;
+    }
+
+    .cta-btn:hover {
+      background: #ffffff;
+      color: #222222;
+      border-color: #ffffff;
+    }
+
+    .cta-btn:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* Collapsible 28-Task Index Directory at bottom */
+    .index-drawer {
+      margin-top: 20px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+
+    .index-drawer summary {
+      padding: 18px 24px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      list-style: none;
+    }
+
+    .index-drawer summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .index-table-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    table.task-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    table.task-table th,
+    table.task-table td {
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    table.task-table th {
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+    }
+
+    table.task-table code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: #c2c8ff;
+    }
+
+    .site-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 36px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Fixed Transparent Header -->
+  <header class="site-header" id="site-header">
+    <a href="#" class="brand font-display">
+      <span class="brand-dot"></span>
+      <span>DEX-T2</span>
+    </a>
+    <div class="nav-actions">
+      <button type="button" class="nav-pill" id="toggle-labels-btn" title="Show or hide task labels on the 4x7 GIF wall">
+        Show Task Labels
+      </button>
+      <button type="button" class="nav-pill" id="toggle-title-btn" title="Preview title overlay">
+        Title Overlay
+      </button>
+      <a href="#article-start" class="nav-pill">Read Overview</a>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <!-- Top Sticky Hero Section with 4x7 Egocentric GIF Wall -->
+    <section class="hero-scroll-section" id="hero-section">
+      <div class="hero-sticky-viewport">
+        <div class="gif-wall" id="gif-wall" aria-label="4 by 7 grid of 28 distinctive egocentric manipulation tasks">
+          <!-- Populated dynamically from manifest (with static fallback below) -->
+          <div class="gif-cell"><img src="assets/gifs/task_01_dip_cotton_swab_in_bottle.gif" alt="Dip cotton swab in bottle" loading="eager" /><div class="gif-badge">01 · Dip cotton swab in bottle</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_02_dip_cotton_swab_in_bottle_with_tweezers.gif" alt="Dip cotton swab in bottle with tweezers" loading="eager" /><div class="gif-badge">02 · Dip cotton swab in bottle with tweezers</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_03_drop_liquid_to_test_tube_with_pipette.gif" alt="Drop liquid to test tube with pipette" loading="eager" /><div class="gif-badge">03 · Drop liquid to test tube with pipette</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_04_fold_blue_fabric_over_objects.gif" alt="Fold blue fabric over objects" loading="eager" /><div class="gif-badge">04 · Fold blue fabric over objects</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_05_insert_cap_into_plastic_tube.gif" alt="Insert cap into plastic tube" loading="eager" /><div class="gif-badge">05 · Insert cap into plastic tube</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_06_insert_rod_into_organizer_box.gif" alt="Insert rod into organizer box" loading="eager" /><div class="gif-badge">06 · Insert rod into organizer box</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_07_open_plastic_bag_with_both_hands.gif" alt="Open plastic bag with both hands" loading="eager" /><div class="gif-badge">07 · Open plastic bag with both hands</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_08_pick_up_bandage_from_ziplock_bag_with_tweezers.gif" alt="pick up bandage from ziplock bag with tweezers" loading="eager" /><div class="gif-badge">08 · pick up bandage from ziplock bag with tweezers</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_09_pick_up_plastic_package_from_drawer.gif" alt="Pick up plastic package from drawer" loading="eager" /><div class="gif-badge">09 · Pick up plastic package from drawer</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_10_pick_up_plastic_tube_from_plastic_bag.gif" alt="Pick up plastic tube from plastic bag" loading="eager" /><div class="gif-badge">10 · Pick up plastic tube from plastic bag</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_11_pick_up_rubber_band_from_drawer.gif" alt="Pick up rubber band from drawer" loading="eager" /><div class="gif-badge">11 · Pick up rubber band from drawer</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_12_pick_up_syringe_from_drawer_and_press_syringe_pl.gif" alt="Pick up syringe from drawer and press syringe plunger" loading="eager" /><div class="gif-badge">12 · Pick up syringe from drawer and press syringe plunger</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_13_place_objects_on_tray.gif" alt="Place objects on tray" loading="eager" /><div class="gif-badge">13 · Place objects on tray</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_14_place_tweezer_in_toolbox.gif" alt="place tweezer in toolbox" loading="eager" /><div class="gif-badge">14 · place tweezer in toolbox</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_15_prepare_tray_with_blue_fabric_tweezers_and_cotto.gif" alt="Prepare tray with blue fabric, tweezers, and cotton swab" loading="eager" /><div class="gif-badge">15 · Prepare tray with blue fabric, tweezers, and cotton swab</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_16_press_pipette_bulb.gif" alt="Press pipette bulb" loading="eager" /><div class="gif-badge">16 · Press pipette bulb</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_17_press_syringe_plunger.gif" alt="Press syringe plunger" loading="eager" /><div class="gif-badge">17 · Press syringe plunger</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_18_spray_liquid_on_cloth.gif" alt="Spray liquid on cloth" loading="eager" /><div class="gif-badge">18 · Spray liquid on cloth</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_19_take_tweezer_out_of_ziplock_bag.gif" alt="take tweezer out of ziplock bag" loading="eager" /><div class="gif-badge">19 · take tweezer out of ziplock bag</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_20_tie_a_black_zip_tie.gif" alt="Tie a black zip tie" loading="eager" /><div class="gif-badge">20 · Tie a black zip tie</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_21_tie_the_tubing_with_zip_ties.gif" alt="Tie the tubing with zip ties" loading="eager" /><div class="gif-badge">21 · Tie the tubing with zip ties</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_22_unscrew_and_screw_spray_bottle_cap.gif" alt="Unscrew and screw spray bottle cap" loading="eager" /><div class="gif-badge">22 · Unscrew and screw spray bottle cap</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_23_use_scissors_for_cutting_plant_leaves.gif" alt="Use scissors for cutting plant leaves" loading="eager" /><div class="gif-badge">23 · Use scissors for cutting plant leaves</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_24_use_scissors_for_cutting_tape.gif" alt="Use scissors for cutting tape" loading="eager" /><div class="gif-badge">24 · Use scissors for cutting tape</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_25_use_tweezers_for_picking_up_pills.gif" alt="Use tweezers for picking up pills" loading="eager" /><div class="gif-badge">25 · Use tweezers for picking up pills</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_26_use_tweezers_for_picking_up_plastic_beads.gif" alt="Use tweezers for picking up plastic beads" loading="eager" /><div class="gif-badge">26 · Use tweezers for picking up plastic beads</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_27_use_tweezers_for_placing_paper_in_plastic_bag.gif" alt="Use tweezers for placing paper in plastic bag" loading="eager" /><div class="gif-badge">27 · Use tweezers for placing paper in plastic bag</div></div>
+          <div class="gif-cell"><img src="assets/gifs/task_28_wipe_whiteboard_with_eraser.gif" alt="Wipe whiteboard with eraser" loading="eager" /><div class="gif-badge">28 · Wipe whiteboard with eraser</div></div>
+        </div>
+
+        <!-- Centered Title Overlay (fades in smoothly on scroll, matching Lightwheel's hero) -->
+        <div class="hero-title-overlay" id="hero-overlay">
+          <div class="hero-title-card">
+            <div class="partner-badge">
+              <span>Dex-T2</span>
+              <span>·</span>
+              <span>Open-X-Tactile Standard</span>
+            </div>
+            <h1 class="hero-h1 font-display">Dex-T2
+Synchronized Egocentric Vision, Pose &amp;
+Bilateral Tactile Manipulation Dataset</h1>
+            <h2 class="hero-h2">28 manipulation tasks · Synchronized head &amp; wrist RGB · 3D hand joints · High-density bilateral tactile sensing</h2>
+          </div>
+        </div>
+
+        <div class="scroll-cue" id="scroll-cue">
+          <span>4×7 Egocentric Task Wall (3s–8s active manipulation) · Scroll down</span>
+          <span>↓</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Overview Section -->
+    <article class="article-body" id="article-start">
+      <section class="content-section">
+        <div class="content-inner">
+          <p>
+            <a href="https://huggingface.co/datasets/airis-lab-ufl/DexT2" target="_blank" rel="noopener noreferrer" class="gradient-link">Dex-T2</a> is an open egocentric visuo-tactile human manipulation dataset built to advance contact-rich Physical AI and dexterous robot learning. While vision-only first-person datasets struggle when fingers and tools occlude the point of contact, Dex-T2 captures fine-grained bimanual and tool-mediated manipulation—spanning precision tweezer handling, pipette and syringe operation, tube capping, zip-tie fastening, scissors cutting, deformable cloth folding, and container organization—paired with dense, hardware-synchronized contact feedback and 3D hand kinematics.
+          </p>
+          <p>
+            The curated release comprises <strong>948 verified episodes</strong> across <strong>29 manipulation tasks</strong> (<strong>4.57 hours / 274.4 minutes</strong> of active manipulation trajectories), exported in the standardized <a href="https://open-x-tactile.github.io/" target="_blank" rel="noopener noreferrer" class="gradient-link">Open-X-Tactile / FTP-1</a> Zarr layout on the <a href="https://huggingface.co/datasets/airis-lab-ufl/DexT2" target="_blank" rel="noopener noreferrer" class="gradient-link">Hugging Face Hub</a>. Every episode provides four synchronized sensing and annotation modalities: (1) <strong>Multi-view RGB video</strong> from an egocentric head camera and bilateral left/right wrist cameras, (2) <strong>3D spatial &amp; hand pose trajectories</strong> including 6-DoF head and wrist poses plus 21-joint 3D hand skeletons for both hands, (3) <strong>Bilateral high-density tactile sensing</strong> mapped across 15 anatomical hand regions per glove (distal/proximal phalanges and palm sub-areas), and (4) <strong>Human-verified subtask language instructions</strong> aligned at the segment level.
+          </p>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <p>Dex-T2 Dataset · Built for GitHub Pages (<code>github.io</code>)</p>
+  </footer>
+
+  <script>
+    (function () {
+      const header = document.getElementById('site-header');
+      const overlay = document.getElementById('hero-overlay');
+      const scrollCue = document.getElementById('scroll-cue');
+      const toggleLabelsBtn = document.getElementById('toggle-labels-btn');
+      const toggleTitleBtn = document.getElementById('toggle-title-btn');
+      let forceTitleOverlay = false;
+
+      function updateOnScroll() {
+        const y = window.scrollY || window.pageYOffset || 0;
+        if (y > 40) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+
+        if (forceTitleOverlay) {
+          overlay.style.opacity = '1';
+          scrollCue.style.opacity = '0';
+          return;
+        }
+
+        // Match Lightwheel's sticky hero fade-in over the first ~380px of scroll
+        const progress = Math.max(0, Math.min(1, (y - 30) / 380));
+        overlay.style.opacity = progress.toFixed(3);
+        scrollCue.style.opacity = y > 60 ? '0' : '1';
+      }
+
+      window.addEventListener('scroll', updateOnScroll, { passive: true });
+      updateOnScroll();
+
+      toggleLabelsBtn.addEventListener('click', function () {
+        const active = document.body.classList.toggle('show-all-labels');
+        toggleLabelsBtn.classList.toggle('active', active);
+        toggleLabelsBtn.textContent = active ? 'Hide Task Labels' : 'Show Task Labels';
+      });
+
+      toggleTitleBtn.addEventListener('click', function () {
+        forceTitleOverlay = !forceTitleOverlay;
+        toggleTitleBtn.classList.toggle('active', forceTitleOverlay);
+        updateOnScroll();
+      });
+    })();
+  </script>
+</body>
+</html>
