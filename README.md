@@ -14,33 +14,8 @@ A static website for **Dex-T2** modeled after [lightwheel.ai/media/egosuite-open
 3. **28-Task Episode Index Manifest**:
    - Full mapping of grid slot (`R1C1`–`R4C7`), task name, `session_id`, `episode_index`, `episode_id`, video source path, and exported OXT `.zarr` path in `assets/gifs/manifest.json`.
 
-## Local Preview
-
-```bash
-chmod +x Dex-T2-website/start_preview.sh
-./Dex-T2-website/start_preview.sh 8092
-```
-
-Then open <http://127.0.0.1:8092/> in your browser.
-
 ## Regenerating the 28 GIFs
 
 ```bash
 .venv-module5/bin/python Dex-T2-website/scripts/generate_grid_gifs.py
 ```
-
-## Deploying to GitHub Pages (`github.io`)
-
-Because this folder is a self-contained static site (with `.nojekyll` included and relative asset paths):
-
-```bash
-cd Dex-T2-website
-git init
-git checkout -b main
-git add index.html .nojekyll README.md assets/gifs/*.gif assets/gifs/manifest.json
-git commit -m "Deploy Dex-T2 4x7 egocentric task wall website"
-git remote add origin https://github.com/<your-org-or-username>/<repo-name>.git
-git push -u origin main
-```
-
-Then in your GitHub repository **Settings → Pages**, set **Source** to **Deploy from a branch** (`main` / `/ (root)`).
